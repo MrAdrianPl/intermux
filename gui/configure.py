@@ -38,12 +38,62 @@ def refresh_interfaces():
 # Assign logic placeholder
 def assign_interface():
     iface = interface_combo.get()
-    app = app_entry.get()
-    if iface and app:
+    app = app_entry.get().strip()
+
+    if not iface or not app:
+        print("[X] Interface or App not selected.")
+        return
+
+    namespace = f"ns_{iface}"
+    veth_host = f"veth0_{iface}"
+    veth_ns = f"veth1_{iface}"
+    subnet = "10.200.1"
+    ip_host = f"{subnet}.1/24"
+    ip_ns = f"{subnet}.2/24"
+
+    try:
+        subprocess.run(['sudo', 'ip', 'netns', 'add', namespace], stderr=subprocess.DEVNULL)
+
+        # Delete old veth if exists
+        subprocess.run(['sudo', 'ip', 'link', 'del', veth_host], stderr=subprocess.DEVNULL)
+
+        subprocess.run(['sudo', 'ip', 'link', 'add', veth_host, 'type', 'veth', 'peer', 'name', veth_ns], check=True)
+        subprocess.run(['sudo', 'ip', 'link', 'set', veth_ns, 'netns', namespace], check=True)
+
+        subprocess.run(['sudo', 'ip', 'addr', 'add', ip_host, 'dev', veth_host], check=True)
+        subprocess.run(['sudo', 'ip', 'link', 'set', veth_host, 'up'], check=True)
+
+        subprocess.run(['sudo', 'ip', 'netns', 'exec', namespace, 'ip', 'addr', 'add', ip_ns, 'dev', veth_ns], check=True)
+        subprocess.run(['sudo', 'ip', 'netns', 'exec', namespace, 'ip', 'link', 'set', veth_ns, 'up'], check=True)
+        subprocess.run(['sudo', 'ip', 'netns', 'exec', namespace, 'ip', 'link', 'set', 'lo', 'up'], check=True)
+
+        subprocess.run(['sudo', 'ip', 'netns', 'exec', namespace, 'ip', 'route', 'add', 'default', 'via', f'{subnet}.1'], check=True)
+
+        subprocess.run([
+            'sudo', 'iptables', '-t', 'nat', '-A', 'POSTROUTING',
+            '-s', f'{subnet}.0/24', '-o', iface, '-j', 'MASQUERADE'
+        ], stderr=subprocess.DEVNULL)
+
+        subprocess.Popen([
+            'sudo', 'ip', 'netns', 'exec', namespace,
+            'env',
+            f'DISPLAY={os.environ.get("DISPLAY", ":0")}',
+            f'XAUTHORITY={os.environ.get("XAUTHORITY", os.path.expanduser("~/.Xauthority"))}',
+            app
+        ])
+
         assigned_list.insert(END, f"{app} -> {iface}")
         app_entry.delete(0, END)
-    else:
-        print("Select interface and app")
+
+    except subprocess.CalledProcessError as e:
+        print(f"[!] Command failed: {e}")
+    except Exception as e:
+        print(f"[X] Unexpected error: {e}")
+
+
+
+
+
 
 # Get interfaces
 interfaces = interface.get_active_interfaces()
@@ -68,7 +118,7 @@ app_entry.grid(row=2, column=1, padx=10, pady=10, sticky='w')
 
 #listbox to show assignments
 assigned_label = Label(win, text="Assigned:", bg="#2E3436", fg="white")
-assigned_label.grid(row=4, column=0, padx=10, sticky='e')
+assigned_label.grid(row=4, column=0, padx=10, sticky='we')
 
 assigned_list = Listbox(win, width=50, height=10, bg="#555753", fg="white")
 assigned_list.grid(row=4, column=1, columnspan=2, pady=10, sticky='w')
