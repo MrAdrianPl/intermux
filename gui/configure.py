@@ -6,7 +6,7 @@ from tkinter import *
 from tkinter import ttk
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-import core.interface as interface  # Your module
+import core.interface as interface
 
 win = tk.Tk()
 win.title("Configure Interface Usage")
