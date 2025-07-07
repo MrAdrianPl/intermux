@@ -3,13 +3,33 @@ import os
 import subprocess
 import tkinter as tk
 from tkinter import ttk
+from tkinter import messagebox
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import core.interface as interface
+from core.router import check_existing_routing_tables, clear_custom_routing_tables
+
+# Elevate privileges if not running as root
+if os.geteuid() != 0:
+    script_path = os.path.abspath(__file__)
+    try:
+        os.execvp("pkexec", ["pkexec", "python3", script_path])
+    except Exception as e:
+        print(f"[X] Failed to elevate with pkexec: {e}")
+        sys.exit(1)
+
+# Ensure DISPLAY and XAUTHORITY are set for GUI applications
+if "DISPLAY" not in os.environ:
+    os.environ["DISPLAY"] = ":1"
+if "XAUTHORITY" not in os.environ:
+    os.environ["XAUTHORITY"] = f"/home/{os.getenv('SUDO_USER')}/.Xauthority"
+
+# Allow root to access the X server
+subprocess.run("xhost +SI:localuser:root", shell=True, capture_output=True, text=True)
 
 def refresh():
     global interface_names
     interfaces = interface.get_active_interfaces()
-    interface_names = [i['name'] for i in interfaces if i['flag'] == 'UP']
+    interface_names = [i['name'] for i in interfaces if i['flag'] == 'UP' and i['ip_addresses']]
     interface_combo['values'] = interface_names
     if not interface_names:
         interface_combo.set("No active interfaces found")
@@ -20,7 +40,7 @@ def add_path():
     app = path_entry.get()
     iface = interface_combo.get()
     if not app or not iface:
-        print("[X] Application path or interface not selected.")
+        messagebox.showerror("Error", "Please enter a valid application path and select an interface.")
         return
     if app:
         selected_paths.insert(tk.END, f"{app} -> {iface}")
@@ -29,13 +49,49 @@ def add_path():
         return app, iface
 
 def clear_all():
-    selected_paths.delete(0, tk.END)
-    created_paths.delete(0, tk.END)
-    path_entry.delete(0, tk.END)
+    if not selected_paths.size() and not created_paths.size():
+        messagebox.showinfo("Info", "No paths to clear.")
+        return
+    if messagebox.askyesno("Confirm", "Are you sure you want to clear all paths?"):
+        clear_custom_routing_tables()
+        messagebox.showinfo("Success", "All paths cleared successfully!")
+        # Clear the listboxes and entry
+        selected_paths.delete(0, tk.END)
+        created_paths.delete(0, tk.END)
+        path_entry.delete(0, tk.END)
+
+def routing():
+
+    if check_existing_routing_tables():
+        messagebox.showinfo("Info", "Routing tables already exist. No need to create again.")
+        return
+    
+    script_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../core/router.py'))
+
+    create_cmd = ['pkexec', 'python3', script_path]
+    create_result = subprocess.run(create_cmd)
+    if create_result.returncode == 0:
+        messagebox.showinfo("Success", "All routing tables created successfully!\nTaking you to the configure page...")
+    else:
+        messagebox.showerror("Error", f"Failed to create routing tables:\n{create_result.stderr}")
 
 def assign():
-    # Placeholder for assign functionality
-    pass
+    for i in selected_paths.get(first= 0, last=tk.END):
+        created_paths.insert(tk.END, i)
+        selected_paths.delete(0, tk.END)
+    routing()
+
+def clear_routing_tables():
+    if not check_existing_routing_tables():
+        messagebox.showinfo("Info", "No custom routing tables found to clear.")
+        return
+    
+    if messagebox.askyesno("Confirm", "Are you sure you want to clear all custom routing tables?"):
+        clear_custom_routing_tables()
+        messagebox.showinfo("Success", "All custom routing tables cleared successfully!")
+    else:
+        messagebox.showinfo("Cancelled", "Clearing of routing tables cancelled.")
+
 
 # Create main window
 root = tk.Tk()
@@ -113,7 +169,7 @@ interface_label = ttk.Label(interface_frame,
 interface_label.pack(side=tk.LEFT)
 
 interfaces = interface.get_active_interfaces()
-interface_names = [i['name'] for i in interfaces if i['flag'] == 'UP']
+interface_names = [i['name'] for i in interfaces if i['flag'] == 'UP' and i['ip_addresses']]
 
 interface_combo = ttk.Combobox(interface_frame, 
                              values=interface_names)
