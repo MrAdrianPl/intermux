@@ -8,6 +8,9 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import core.interface as interface
 from core.router import check_existing_routing_tables, clear_custom_routing_tables
 
+# Allow root to access the X server
+subprocess.run("xhost +SI:localuser:root", shell=True, capture_output=True, text=True)
+
 # Elevate privileges if not running as root
 if os.geteuid() != 0:
     script_path = os.path.abspath(__file__)
@@ -17,14 +20,25 @@ if os.geteuid() != 0:
         print(f"[X] Failed to elevate with pkexec: {e}")
         sys.exit(1)
 
+
 # Ensure DISPLAY and XAUTHORITY are set for GUI applications
 if "DISPLAY" not in os.environ:
     os.environ["DISPLAY"] = ":1"
 if "XAUTHORITY" not in os.environ:
     os.environ["XAUTHORITY"] = f"/home/{os.getenv('SUDO_USER')}/.Xauthority"
 
-# Allow root to access the X server
-subprocess.run("xhost +SI:localuser:root", shell=True, capture_output=True, text=True)
+
+
+def run_cmd(cmd):
+    result = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
+    if result.returncode != 0:
+        print(f"[!] Failed: {cmd}")
+        print(f"[✗] stderr: {result.stderr.strip()}")
+    else:
+        print(f"[✓] Ran: {cmd}")
+    
+    return result.stdout.strip()
 
 def refresh():
     global interface_names
@@ -63,7 +77,7 @@ def clear_all():
 def routing():
 
     if check_existing_routing_tables():
-        messagebox.showinfo("Info", "Routing tables already exist. No need to create again.")
+        # messagebox.showinfo("Info", "Routing tables already exist. No need to create again.")
         return
     
     script_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../core/router.py'))
@@ -71,15 +85,38 @@ def routing():
     create_cmd = ['pkexec', 'python3', script_path]
     create_result = subprocess.run(create_cmd)
     if create_result.returncode == 0:
-        messagebox.showinfo("Success", "All routing tables created successfully!\nTaking you to the configure page...")
+        # messagebox.showinfo("Success", "All routing tables created successfully!\nTaking you to the configure page...")
+        pass
     else:
         messagebox.showerror("Error", f"Failed to create routing tables:\n{create_result.stderr}")
 
 def assign():
+
+    app_interface = selected_paths.get(first=0, last=tk.END)
+    
+    app_dict = dict()
+    for item in app_interface:
+        app, iface = item.split(" -> ")
+        app_dict[app] = iface
+
+    print(f"[✓] Assigning paths: {app_dict}")
+
     for i in selected_paths.get(first= 0, last=tk.END):
         created_paths.insert(tk.END, i)
         selected_paths.delete(0, tk.END)
     routing()
+
+    run_cmd("sudo ip netns add ns_wlan0")
+    run_cmd("sudo ip link add veth0 type veth peer name veth1")
+    run_cmd("sudo ip link set veth1 netns ns_wlan0")
+    run_cmd("sudo ip addr add 10.0.0.1/24 dev veth0")
+    run_cmd("sudo ip link set veth0 up")
+    run_cmd("sudo mkdir -p /etc/netns/ns_wlan0/tmp")
+    run_cmd('''sudo ip netns exec ns_wlan0 env \
+               DISPLAY=$DISPLAY \
+               XAUTHORITY=$HOME/.Xauthority \
+               firefox --no-remote''')
+
 
 def clear_routing_tables():
     if not check_existing_routing_tables():
