@@ -106,7 +106,7 @@ def assign():
         selected_paths.delete(0, tk.END)
     routing()
 
-    run_cmd("sudo ip netns add ns_wlan0")
+    run_cmd(f"sudo ip netns add ns_wlan0")
     run_cmd("sudo ip link add veth0 type veth peer name veth1")
     run_cmd("sudo ip link set veth1 netns ns_wlan0")
     run_cmd("sudo ip addr add 10.0.0.1/24 dev veth0")
