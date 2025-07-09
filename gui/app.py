@@ -157,6 +157,29 @@ def clear_routing_tables():
     else:
         messagebox.showinfo("Cancelled", "Clearing of routing tables cancelled.")
 
+def reset_all():
+    if messagebox.askyesno("Confirm", "This will remove all veth interfaces, network namespaces, and routing tables created by this application. Are you sure you want to proceed?"):
+        try:
+            # Clear custom routing tables first
+            clear_custom_routing_tables()
+
+            # Remove veth interfaces (assuming they follow a pattern, e.g., veth0, veth1, etc.)
+            # This is a simple approach; a more robust solution would track created interfaces.
+            run_cmd("ip link del veth0 2>/dev/null")
+
+            # Remove network namespaces
+            for iface in interface_names:
+                ns = f"ns_{iface}"
+                run_cmd(f"ip netns del {ns} 2>/dev/null")
+
+            # Clear GUI lists
+            selected_paths.delete(0, tk.END)
+            created_paths.delete(0, tk.END)
+            
+            messagebox.showinfo("Success", "System has been reset to its defaults.")
+        except Exception as e:
+            messagebox.showerror("Error", f"An error occurred during reset: {e}")
+
 
 # Create main window
 root = tk.Tk()
@@ -312,19 +335,26 @@ bottom_frame.pack(fill=tk.X)
 buttons_frame = ttk.Frame(bottom_frame, style="Dark.TFrame")
 buttons_frame.pack(anchor=tk.CENTER)
 
-assign_btn = ttk.Button(buttons_frame, 
-                       text="⚡ Assign", 
+assign_btn = ttk.Button(buttons_frame,
+                       text="⚡ Assign",
                        width=20,
-                       command=assign, 
+                       command=assign,
                        style="Dark.TButton")
 assign_btn.pack(side=tk.LEFT, padx=5)
 
-clear_btn = ttk.Button(buttons_frame, 
-                      text="⌫ Clear everything", 
+clear_btn = ttk.Button(buttons_frame,
+                      text="⌫ Clear everything",
                       width=20,
-                      command=clear_all, 
+                      command=clear_all,
                       style="Dark.TButton")
 clear_btn.pack(side=tk.LEFT, padx=5)
+
+reset_btn = ttk.Button(buttons_frame,
+                       text="Reset Everything",
+                       width=20,
+                       command=reset_all,
+                       style="Dark.TButton")
+reset_btn.pack(side=tk.LEFT, padx=5)
 
 # Start the application
 if __name__ == '__main__':
