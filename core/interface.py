@@ -104,7 +104,7 @@ def get_active_interfaces():
         if len(parts) < 2:
             continue
 
-        name = parts[1].strip()
+        name = parts[1].strip().split('@')[0]
         
         # Skip loopback interface
         if name == 'lo':

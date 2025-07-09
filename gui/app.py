@@ -32,36 +32,36 @@ if "XAUTHORITY" not in os.environ:
 
 
 
-def run_cmd(cmd):
-    result = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-
-    if result.returncode != 0:
-        print(f"[!] Failed: {cmd}")
-        print(f"[✗] stderr: {result.stderr.strip()}")
-    else:
-        print(f"[✓] Ran: {cmd}")
-    
-    return result.stdout.strip()
-
 # def run_cmd(cmd):
-#     try:
-#         result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-#         stderr = result.stderr.strip()
+#     result = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
-#         # Skip harmless 'already exists' or 'File exists' errors
-#         harmless_errors = [
-#             "File exists",
-#             "Cannot create namespace file",
-#             "already exists",
-#             "exists but is not a directory"
-#         ]
+#     if result.returncode != 0:
+#         print(f"[!] Failed: {cmd}")
+#         print(f"[✗] stderr: {result.stderr.strip()}")
+#     else:
+#         print(f"[✓] Ran: {cmd}")
+    
+#     return result.stdout.strip()
 
-#         if result.returncode != 0 and not any(err in stderr for err in harmless_errors):
-#             print(f"[!] {cmd}\n    -> {stderr}")
-#         return result.stdout.strip()
+def run_cmd(cmd):
+    try:
+        result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+        stderr = result.stderr.strip()
 
-#     except Exception as e:
-#         print(f"[X] Exception while running '{cmd}': {e}")
+        # Skip harmless 'already exists' or 'File exists' errors
+        harmless_errors = [
+            "File exists",
+            "Cannot create namespace file",
+            "already exists",
+            "exists but is not a directory"
+        ]
+
+        if result.returncode != 0 and not any(err in stderr for err in harmless_errors):
+            print(f"[!] {cmd}\n    -> {stderr}")
+        return result.stdout.strip()
+
+    except Exception as e:
+        print(f"[X] Exception while running '{cmd}': {e}")
 
 def refresh():
     global interface_names
