@@ -108,41 +108,69 @@ python3 gui/app.py
 
 ### 💻 CLI Mode
 
+The CLI provides full functionality for managing network interface bindings from the command line:
+
 #### 1. List Active Interfaces
 
 ```bash
-python3 core/interface.py
+sudo python3 cli.py list
 ```
 
 Output example:
 ```
---- Detected Network Interfaces ---
+--- Active Network Interfaces ---
 
 Interface: wlan0
   Status: UP
   Type: Wi-Fi
-  MAC Address: AA:BB:CC:DD:EE:FF
-  IP Addresses: 192.168.1.100/24
-  Metric: 600
+  IP Addresses: 192.168.1.100/24, fe80::1234:5678:9abc:def0/64
   Gateways: 192.168.1.1
-  System DNS Servers: 8.8.8.8, 8.8.4.4
+
+Interface: enp7s0f4u1
+  Status: UP
+  Type: Ethernet
+  IP Addresses: 10.252.21.95/24
+  Gateways: 10.252.21.177
 ```
 
-#### 2. Setup Routing Tables
+#### 2. Assign Application to Interface
 
 ```bash
-sudo python3 core/router.py
+sudo python3 cli.py assign --app /usr/lib/firefox/firefox --iface wlan0
 ```
 
-This creates custom routing tables for each active interface.
-
-#### 3. Bind Applications (via GUI)
-
-Use the GUI to bind applications to specific interfaces. The binding process:
+This command:
 1. Creates a network namespace for the interface
-2. Sets up virtual ethernet pairs
+2. Sets up virtual ethernet pairs (veth0/veth1)
 3. Configures routing within the namespace
 4. Launches the application in the isolated environment
+
+#### 3. Clear All Assigned Paths
+
+```bash
+sudo python3 cli.py clear
+```
+
+Removes all custom routing tables and clears assigned paths.
+
+#### 4. Reset Everything
+
+```bash
+sudo python3 cli.py reset
+```
+
+Completely resets the system by:
+- Removing all veth interfaces
+- Deleting network namespaces
+- Clearing custom routing tables
+- Restoring system to defaults
+
+#### CLI Help
+
+```bash
+python3 cli.py --help
+python3 cli.py <command> --help  # For command-specific help
+```
 
 ## 🏗️ Architecture
 
@@ -229,6 +257,20 @@ Enable verbose logging by modifying `core/interface.py`:
 ```python
 logging.basicConfig(level=logging.DEBUG, format='%(levelname)s: %(message)s')
 ```
+
+## ⚠️ Known Limitations
+
+### Browser Compatibility
+
+- ✅ **Firefox**: Fully supported (`/usr/lib/firefox/firefox`)
+- ❌ **Chromium**: Currently not supported due to sandboxing conflicts
+- ✅ **Other Applications**: Most GUI and CLI applications work correctly
+
+### System Requirements
+
+- Root privileges required for network namespace operations
+- Linux kernel with network namespace support
+- iproute2 package for network management
 
 ## 🤝 Contributing
 

@@ -130,6 +130,12 @@ def assign():
     routing()
 
     for app, iface in app_dict.items():
+        # check if the app is chromium
+        if "chromium" in app.lower():
+            # If it's Chromium, show a info box saying its not yet supported
+            messagebox.showinfo("Info", "Chromium support is not yet implemented. Please use another application for now.")
+            continue
+        
         ns = f"ns_{iface}"
         run_cmd(f"ip netns add {ns}")
         run_cmd("ip link add veth0 type veth peer name veth1")
