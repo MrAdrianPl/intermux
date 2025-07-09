@@ -25,7 +25,10 @@ if os.geteuid() != 0:
 if "DISPLAY" not in os.environ:
     os.environ["DISPLAY"] = ":1"
 if "XAUTHORITY" not in os.environ:
-    os.environ["XAUTHORITY"] = f"/home/{os.getenv('SUDO_USER')}/.Xauthority"
+    xauth_path = os.path.expanduser("~/.Xauthority")
+    if os.getenv("SUDO_USER"):
+        xauth_path = f"/home/{os.getenv('SUDO_USER')}/.Xauthority"
+    os.environ["XAUTHORITY"] = xauth_path
 
 
 
@@ -39,6 +42,26 @@ def run_cmd(cmd):
         print(f"[✓] Ran: {cmd}")
     
     return result.stdout.strip()
+
+# def run_cmd(cmd):
+#     try:
+#         result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+#         stderr = result.stderr.strip()
+
+#         # Skip harmless 'already exists' or 'File exists' errors
+#         harmless_errors = [
+#             "File exists",
+#             "Cannot create namespace file",
+#             "already exists",
+#             "exists but is not a directory"
+#         ]
+
+#         if result.returncode != 0 and not any(err in stderr for err in harmless_errors):
+#             print(f"[!] {cmd}\n    -> {stderr}")
+#         return result.stdout.strip()
+
+#     except Exception as e:
+#         print(f"[X] Exception while running '{cmd}': {e}")
 
 def refresh():
     global interface_names
@@ -82,7 +105,7 @@ def routing():
     
     script_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../core/router.py'))
 
-    create_cmd = ['pkexec', 'python3', script_path]
+    create_cmd = ['python3', script_path]
     create_result = subprocess.run(create_cmd)
     if create_result.returncode == 0:
         # messagebox.showinfo("Success", "All routing tables created successfully!\nTaking you to the configure page...")
@@ -97,7 +120,7 @@ def assign():
     app_dict = dict()
     for item in app_interface:
         app, iface = item.split(" -> ")
-        app_dict[app] = iface
+        app_dict[app] = iface # Create a dictionary with app as key and iface as value example: {'/path/to/app': 'wlan0'}
 
     print(f"[✓] Assigning paths: {app_dict}")
 
@@ -106,16 +129,21 @@ def assign():
         selected_paths.delete(0, tk.END)
     routing()
 
-    run_cmd(f"sudo ip netns add ns_wlan0")
-    run_cmd("sudo ip link add veth0 type veth peer name veth1")
-    run_cmd("sudo ip link set veth1 netns ns_wlan0")
-    run_cmd("sudo ip addr add 10.0.0.1/24 dev veth0")
-    run_cmd("sudo ip link set veth0 up")
-    run_cmd("sudo mkdir -p /etc/netns/ns_wlan0/tmp")
-    run_cmd('''sudo ip netns exec ns_wlan0 env \
-               DISPLAY=$DISPLAY \
-               XAUTHORITY=$HOME/.Xauthority \
-               firefox --no-remote''')
+    for app, iface in app_dict.items():
+        ns = f"ns_{iface}"
+        run_cmd(f"ip netns add {ns}")
+        run_cmd("ip link add veth0 type veth peer name veth1")
+        run_cmd(f"ip link set veth1 netns {ns}")
+        run_cmd("ip addr add 10.0.0.1/24 dev veth0")
+        run_cmd("ip link set veth0 up")
+        run_cmd(f"mkdir -p /etc/netns/{ns}/tmp")
+        # run_cmd(
+        #     f"ip netns exec {ns} env DISPLAY=$DISPLAY XAUTHORITY=$HOME/.Xauthority {app}"
+        # )   
+        subprocess.Popen(
+            f"sudo ip netns exec {ns} env DISPLAY=$DISPLAY XAUTHORITY=$HOME/.Xauthority {app}",
+            shell=True
+        )
 
 
 def clear_routing_tables():
