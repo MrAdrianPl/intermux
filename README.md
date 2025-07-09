@@ -25,7 +25,7 @@
 
 ### 🎯 Use Cases
 
-- **Multi-WAN Management**: Route different applications through different internet connections
+- **Multi-WAN Management**: Route different applications through different internet connections — boost speed, balance load, or bypass network-specific restrictions
 - **Network Testing**: Test applications on specific network interfaces
 - **Security Isolation**: Isolate applications in separate network namespaces
 - **Bandwidth Management**: Control which apps use which network connections
