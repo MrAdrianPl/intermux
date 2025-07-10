@@ -164,19 +164,20 @@ def get_active_interfaces():
                     if ip_match:
                         interface_info['ip_addresses'].append(ip_match.group(1))
 
-        # 3. Get Routes, Metric, and Gateways associated with this specific interface
-        ip_route_output = _run_command(['ip', 'route', 'show', 'dev', name], suppress_errors=True)
+        # 3. Get Routes, Metric, and Gateways
+        ip_route_output = _run_command(['ip', 'route', 'show'], suppress_errors=True)
         if ip_route_output:
             for route_line in ip_route_output.split('\n'):
-                # Extract metric
-                metric_match = re.search(r'metric\s+(\d+)', route_line)
-                if metric_match:
-                    interface_info['metric'] = int(metric_match.group(1))
-                
-                # Extract gateway (via) for routes specific to this interface
-                gateway_match = re.search(r'via\s+([0-9a-fA-F.:]+)', route_line)
-                if gateway_match and gateway_match.group(1) not in interface_info['gateways']:
-                    interface_info['gateways'].append(gateway_match.group(1))
+                if f"dev {name}" in route_line:
+                    # Extract metric
+                    metric_match = re.search(r'metric\s+(\d+)', route_line)
+                    if metric_match:
+                        interface_info['metric'] = int(metric_match.group(1))
+                    
+                    # Extract gateway (via) for routes specific to this interface
+                    gateway_match = re.search(r'via\s+([0-9a-fA-F.:]+)', route_line)
+                    if gateway_match and gateway_match.group(1) not in interface_info['gateways']:
+                        interface_info['gateways'].append(gateway_match.group(1))
 
         interfaces.append(interface_info)
         # print(f"Detected interface: {interfaces}")

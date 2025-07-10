@@ -2,6 +2,7 @@ import sys
 import os
 import subprocess
 import tkinter as tk
+import hashlib
 from tkinter import ttk
 from tkinter import messagebox
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -134,12 +135,16 @@ def assign():
             messagebox.showinfo("Info", "Chromium support is not yet implemented. Please use another application for now.")
             continue
 
-        ns = f"ns_{iface}"
-        veth0 = f"veth0_{iface}"
-        veth1 = f"veth1_{iface}"
+        iface_hash = hashlib.md5(iface.encode()).hexdigest()[:8]
+        ns = f"ns_{iface_hash}"
+        veth0 = f"veth0_{iface_hash}"
+        veth1 = f"veth1_{iface_hash}"
 
         # run_cmd(f"ip netns del {ns}", ignore_errors=True)
         # run_cmd(f"ip link del {veth0}", ignore_errors=True)
+        run_cmd(f"ip netns del {ns}")
+        run_cmd(f"ip link del {veth0}")
+        run_cmd(f"ip link del {veth1}")
 
         run_cmd(f"ip netns add {ns}")
         run_cmd(f"ip link add {veth0} type veth peer name {veth1}")
@@ -151,11 +156,13 @@ def assign():
         run_cmd(f"ip netns exec {ns} ip link set {veth1} up")
         run_cmd(f"ip netns exec {ns} ip route add default via 10.0.{hash(iface)%255}.1")
         run_cmd(f"mkdir -p /etc/netns/{ns}")
-        run_cmd(f"echo 'nameserver 8.8.8.8' | tee /etc/netns/{ns}/resolv.conf")
-        run_cmd(f"ip netns exec {ns} iptables -t nat -A POSTROUTING -o {iface} -j MASQUERADE")
+        resolv_conf_path = os.path.realpath("/etc/resolv.conf")
+        run_cmd(f"cp {resolv_conf_path} /etc/netns/{ns}/resolv.conf")
+        run_cmd(f"iptables -t nat -A POSTROUTING -s 10.0.{hash(iface)%255}.0/24 -j MASQUERADE")
         run_cmd(f"sysctl -w net.ipv4.ip_forward=1")
 
-
+        os.environ["DISPLAY"] = ":1"
+        os.environ["XAUTHORITY"] = f"/home/{os.getlogin()}/.Xauthority"
         # Launch GUI app in namespace with proper env
         subprocess.Popen(
             f"ip netns exec {ns} env DISPLAY={os.environ['DISPLAY']} XAUTHORITY={os.environ['XAUTHORITY']} {app}",
