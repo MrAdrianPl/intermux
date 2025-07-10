@@ -305,7 +305,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - 🐛 [Report bugs](https://github.com/yourusername/intermux/issues)
 - 💡 [Request features](https://github.com/yourusername/intermux/issues)
-- 📧 Contact: your.email@example.com
 
 ---
 
