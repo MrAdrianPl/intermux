@@ -3,6 +3,7 @@ import os
 import subprocess
 import tkinter as tk
 import hashlib
+import tempfile
 from tkinter import ttk
 from tkinter import messagebox
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -118,19 +119,19 @@ def assign():
 
     app_interface = selected_paths.get(first=0, last=tk.END)
     
-    app_dict = dict()
+    app_list = []
     for item in app_interface:
         app, iface = item.split(" -> ")
-        app_dict[app] = iface # Create a dictionary with app as key and iface as value example: {'/path/to/app': 'wlan0'}
+        app_list.append((app, iface))
 
-    print(f"[✓] Assigning paths: {app_dict}")
+    print(f"[✓] Assigning paths: {app_list}")
 
     for i in selected_paths.get(first= 0, last=tk.END):
         created_paths.insert(tk.END, i)
         selected_paths.delete(0, tk.END)
     routing()
 
-    for app, iface in app_dict.items():
+    for app, iface in app_list:
         if "chromium" in app.lower():
             messagebox.showinfo("Info", "Chromium support is not yet implemented. Please use another application for now.")
             continue
@@ -163,9 +164,16 @@ def assign():
 
         os.environ["DISPLAY"] = ":1"
         os.environ["XAUTHORITY"] = f"/home/{os.getlogin()}/.Xauthority"
+        
+        launch_cmd = f"ip netns exec {ns} env DISPLAY={os.environ['DISPLAY']} XAUTHORITY={os.environ['XAUTHORITY']} {app}"
+        
+        if "firefox" in app.lower():
+            profile_dir = tempfile.mkdtemp()
+            launch_cmd += f" --profile {profile_dir} -no-remote"
+
         # Launch GUI app in namespace with proper env
         subprocess.Popen(
-            f"ip netns exec {ns} env DISPLAY={os.environ['DISPLAY']} XAUTHORITY={os.environ['XAUTHORITY']} {app}",
+            launch_cmd,
             shell=True
         )
 
@@ -186,13 +194,15 @@ def reset_all():
             # Clear custom routing tables first
             clear_custom_routing_tables()
 
-            # Remove veth interfaces (assuming they follow a pattern, e.g., veth0, veth1, etc.)
-            # This is a simple approach; a more robust solution would track created interfaces.
-            run_cmd("ip link del veth0 2>/dev/null")
+            # Remove veth interfaces
+            veth_interfaces = [line.split(':')[1].strip().split('@')[0] for line in run_cmd("ip -o link show").split('\n') if 'veth' in line]
+            for veth in veth_interfaces:
+                run_cmd(f"ip link del {veth}")
 
             # Remove network namespaces
             for iface in interface_names:
-                ns = f"ns_{iface}"
+                iface_hash = hashlib.md5(iface.encode()).hexdigest()[:8]
+                ns = f"ns_{iface_hash}"
                 run_cmd(f"ip netns del {ns} 2>/dev/null")
 
             # Clear GUI lists
@@ -200,6 +210,7 @@ def reset_all():
             created_paths.delete(0, tk.END)
             
             messagebox.showinfo("Success", "System has been reset to its defaults.")
+            refresh() # Refresh the interface list
         except Exception as e:
             messagebox.showerror("Error", f"An error occurred during reset: {e}")
 
