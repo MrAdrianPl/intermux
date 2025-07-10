@@ -130,27 +130,37 @@ def assign():
     routing()
 
     for app, iface in app_dict.items():
-        # check if the app is chromium
         if "chromium" in app.lower():
-            # If it's Chromium, show a info box saying its not yet supported
             messagebox.showinfo("Info", "Chromium support is not yet implemented. Please use another application for now.")
             continue
-        
+
         ns = f"ns_{iface}"
+        veth0 = f"veth0_{iface}"
+        veth1 = f"veth1_{iface}"
+
+        # run_cmd(f"ip netns del {ns}", ignore_errors=True)
+        # run_cmd(f"ip link del {veth0}", ignore_errors=True)
+
         run_cmd(f"ip netns add {ns}")
-        run_cmd("ip link add veth0 type veth peer name veth1")
-        run_cmd(f"ip link set veth1 netns {ns}")
-        run_cmd("ip addr add 10.0.0.1/24 dev veth0")
-        run_cmd("ip link set veth0 up")
-        run_cmd(f"mkdir -p /etc/netns/{ns}/tmp")
-        # run_cmd(
-        #     f"ip netns exec {ns} env DISPLAY=$DISPLAY XAUTHORITY=$HOME/.Xauthority {app}"
-        # )   
+        run_cmd(f"ip link add {veth0} type veth peer name {veth1}")
+        run_cmd(f"ip link set {veth1} netns {ns}")
+        run_cmd(f"ip addr add 10.0.{hash(iface)%255}.1/24 dev {veth0}")
+        run_cmd(f"ip link set {veth0} up")
+        # run_cmd(f"ip netns exec {ns} ip link set {veth1} up")
+        run_cmd(f"ip netns exec {ns} ip addr add 10.0.{hash(iface)%255}.2/24 dev {veth1}")
+        run_cmd(f"ip netns exec {ns} ip link set {veth1} up")
+        run_cmd(f"ip netns exec {ns} ip route add default via 10.0.{hash(iface)%255}.1")
+        run_cmd(f"mkdir -p /etc/netns/{ns}")
+        run_cmd(f"echo 'nameserver 8.8.8.8' | tee /etc/netns/{ns}/resolv.conf")
+        run_cmd(f"ip netns exec {ns} iptables -t nat -A POSTROUTING -o {iface} -j MASQUERADE")
+        run_cmd(f"sysctl -w net.ipv4.ip_forward=1")
+
+
+        # Launch GUI app in namespace with proper env
         subprocess.Popen(
-            f"sudo ip netns exec {ns} env DISPLAY=$DISPLAY XAUTHORITY=$HOME/.Xauthority {app}",
+            f"ip netns exec {ns} env DISPLAY={os.environ['DISPLAY']} XAUTHORITY={os.environ['XAUTHORITY']} {app}",
             shell=True
         )
-
 
 def clear_routing_tables():
     if not check_existing_routing_tables():
