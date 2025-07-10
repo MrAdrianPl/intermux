@@ -4,13 +4,6 @@
 
 ### Advanced Network Interface Management for Linux
 
-## 🎥 Tutorial Video
-
-<video controls width="100%">
-  <source src="https://res.cloudinary.com/dzsghc33d/video/upload/v1752167379/Screencast_20250710_223520_gfnqkq.webm" type="video/webm">
-  Your browser does not support the video tag.
-</video>
-
 [![Python Version](https://img.shields.io/badge/python-3.6%2B-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](https://opensource.org/license/mit)
 [![Platform](https://img.shields.io/badge/platform-Linux-orange.svg)](https://www.linux.org/)
@@ -178,6 +171,11 @@ Completely resets the system by:
 python3 cli.py --help
 python3 cli.py <command> --help  # For command-specific help
 ```
+
+## 🎥 Tutorial Video
+
+![Screencast_20250710_223520_gfnqkq](https://github.com/user-attachments/assets/c018bddd-7f32-4471-a3f1-da75d4463c3c)
+
 
 ## 🏗️ Architecture
 
