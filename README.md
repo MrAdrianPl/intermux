@@ -67,8 +67,19 @@
 sudo apt update
 sudo apt install -y python3 python3-pip python3-tk iproute2 iptables
 
-# Python dependencies
+# Python Virtual environment
+python -m venv venv
+source venv/bin/activate
+
+# Python dependencies in the venv
 pip3 install -r requirements.txt
+```
+
+- Note for Ubuntu 24.04+ users: Some Python modules (like brotli) may require system-level installation.
+
+```bash
+# If pip fails
+sudo apt install python3-brotli
 ```
 
 ### Clone and Setup
@@ -77,6 +88,11 @@ pip3 install -r requirements.txt
 # Clone the repository
 git clone https://github.com/yourusername/intermux.git
 cd intermux
+
+
+# Python Virtual environment
+python -m venv venv
+source venv/bin/activate
 
 # Install Python dependencies
 pip3 install -r requirements.txt
