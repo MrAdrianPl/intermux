@@ -115,6 +115,21 @@ pip3 install -r requirements.txt
 chmod +x core/router.py
 ```
 
+## 🧩 Packeges Required (If everything above fails)
+
+- You can explicitly install these packeges, if all the above given installation steps fails. 
+```
+Brotli==1.1.0
+click==8.2.1
+markdown2==2.5.3
+MarkupSafe==3.0.2
+minijinja==2.11.0
+page==0.3
+PyYAML==6.0.2
+tk==0.1.0
+```
+
+
 ## 📖 Usage
 
 ### 🎨 GUI Mode (Recommended)
