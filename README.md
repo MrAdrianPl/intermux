@@ -217,7 +217,6 @@ intermux/
 ├── gui/                    # GUI components
 │   ├── app.py             # Main GUI application
 │   ├── gui.py             # Legacy GUI interface
-│   └── configure.py       # Configuration window
 ├── requirements.txt        # Python dependencies
 └── README.md              # This file
 ```
@@ -238,13 +237,6 @@ Edit `core/router.py` to modify:
 ```python
 BASE_TABLE_ID = 100  # Starting table ID
 BASE_PRIORITY = 1000 # Starting priority
-```
-
-### Network Namespace Subnet
-
-The default subnet for namespaces is `10.200.1.0/24`. Modify in `gui/configure.py`:
-```python
-subnet = "10.200.1"  # Change to your preferred subnet
 ```
 
 ## 🐛 Troubleshooting
