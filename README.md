@@ -31,6 +31,20 @@
 - **Bandwidth Management**: Control which apps use which network connections
 - **Development**: Test network-dependent applications across different interfaces
 
+
+## 💡 Why I Made It
+
+I was downloading a large file via torrent, and while waiting, I opened YouTube to pass the time.
+But the videos were stuck on low quality, buffering like crazy — even though my connection showed 300 Mbps.
+
+Turns out, the torrent was consuming all the bandwidth, and YouTube was left starving.
+That’s when I had the idea: “What if I could assign different apps to different networks?”
+
+After some research, I found that while Linux supports advanced networking, there wasn’t a simple tool to do what I needed — especially one that was GUI-friendly and straightforward.
+
+So I built InterMux:
+A utility that lets me bind any app to a specific interface with ease — no messy configs, no guesswork, just full control.
+
 ## ✨ Features
 
 <table>
