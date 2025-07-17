@@ -39,6 +39,8 @@ AppDir:
       - python3-pkg-resources
       - libfreetype6
       - libfontconfig1  
+      - iproute2 
+      - iptables 
     exclude:
       - usr/share/man
       - usr/share/doc/*/README.*
