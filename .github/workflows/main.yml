@@ -1,0 +1,62 @@
+name: Build AppImage
+
+run-name: Building Appimage
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: list
+      working-directory: ${{github.workspace}}
+      run : ls
+    
+    - name: install python dependencies to project folder
+      working-directory: ${{github.workspace}}
+      run : python3 -m pip install --ignore-installed --prefix=/usr --root=AppDir -r ./requirements.txt
+
+    - name: Build AppImage
+      uses: AppImageCrafters/build-appimage-action@master
+      env:
+        UPDATE_INFO: gh-releases-zsync|cgspeck|brewtarget|latest|*.AppImage.zsync
+      with:
+        recipe: build-scripts/AppBuildCLI.yml     
+
+    - name: Build AppImage
+      uses: AppImageCrafters/build-appimage-action@master
+      env:
+        UPDATE_INFO: gh-releases-zsync|cgspeck|brewtarget|latest|*.AppImage.zsync
+      with:
+        recipe: build-scripts/AppBuildGUI.yml        
+    
+    - uses: actions/upload-artifact@v4
+      with:
+        name: Intermux
+        path: './Intermux.AppImage*'
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: IntermuxCommand
+        path: './IntermuxCommand.AppImage*'        
+    
+    - uses: xresloader/upload-to-github-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.UPLOAD_TOKEN }}
+      with:
+        file: './Intermux.AppImage*'
+        tags: true
+        draft: false        
+
+    - uses: xresloader/upload-to-github-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.UPLOAD_TOKEN }}
+      with:
+        file: './IntermuxCommand.AppImage*'
+        tags: true
+        draft: false              
