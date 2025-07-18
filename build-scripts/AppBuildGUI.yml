@@ -39,7 +39,7 @@ AppDir:
       - python3
       - libtcl8.6
       - libtk8.6
-      - python3-tk
+      - python3-tk=3.10.4-0ubuntu1
       - libfreetype6
       - libfontconfig1
       - iptables
