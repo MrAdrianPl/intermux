@@ -37,9 +37,9 @@ AppDir:
 
     include:
       - python3
-      - python3-pkg-resources
+      - libtcl8.6
+      - libtk8.6
       - python3-tk
-      - tcl
       - libfreetype6
       - libfontconfig1
       - iptables
