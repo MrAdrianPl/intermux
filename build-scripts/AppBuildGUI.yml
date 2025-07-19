@@ -11,7 +11,7 @@ script:
   - cp gui/ AppDir/usr/src -r
   - cp cli.py AppDir/usr/src -r
   - cp Intermux_Logo.png AppDir/usr/share/icons/hicolor/256x256/apps -r
-  - apt-get update && apt-get install -y --no-install-recommends squashfs-tools python3
+  - apt-get update && apt-get install -y --no-install-recommends squashfs-tools python3 python3-tk=3.10.4-0ubuntu1
   
   
 AppDir:
@@ -39,7 +39,7 @@ AppDir:
       - python3
       - libtcl8.6
       - libtk8.6
-      - python3-tk=3.10.4-0ubuntu1
+      - python3-tk
       - libfreetype6
       - libfontconfig1
       - iptables
@@ -59,6 +59,8 @@ AppDir:
       PYTHONHOME: '${APPDIR}/usr'
       PYTHONPATH: '${APPDIR}/usr/lib/python3.10/site-packages'
       CAPPVERSION: "1.0"
+      TCL_LIBRARY: '${APPDIR}/usr/share/tcltk/tcl8.6'
+      TK_LIBRARY: '${APPDIR}/usr/lib/tcltk/x86_64-linux-gnu/tk8.6'      
 
 AppImage:
   arch: x86_64
